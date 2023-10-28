@@ -16,10 +16,6 @@ app.get("/", (req, res) => {
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.rnoho8k.mongodb.net/?retryWrites=true&w=majority`;
 
-// const uri = `mongodb://${process.env.DB_USER}:${process.env.DB_PASS}@ac-okdsnkc-shard-00-00.rnoho8k.mongodb.net:27017,ac-okdsnkc-shard-00-01.rnoho8k.mongodb.net:27017,ac-okdsnkc-shard-00-02.rnoho8k.mongodb.net:27017/?ssl=true&replicaSet=atlas-400qx6-shard-0&authSource=admin&retryWrites=true&w=majority`;
-
-// const uri = "mongodb://localhost:27017"
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -38,11 +34,13 @@ async function run() {
       .db("carDoctorDB")
       .collection("servicesCollection");
 
+    const bookingsCollection = client
+      .db("carDoctorDB")
+      .collection("bookingsCollection");
+
     app.get("/services", async (req, res) => {
       const cursor = servicesCollection.find();
       const result = await cursor.toArray();
-      const tt = req.query
-      console.log(tt)
       res.send(result);
     });
 
@@ -50,6 +48,12 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await servicesCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/bookings", async (req, res) => {
+      const bookingInfo = req.body;
+      const result = await bookingsCollection.insertOne(bookingInfo);
       res.send(result);
     });
 
