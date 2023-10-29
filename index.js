@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser")
+const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
@@ -9,13 +9,15 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 //middlewares
-app.use(cors({
+app.use(
+  cors({
     origin: ["http://localhost:5173"],
     credentials: true,
-  }));
+  })
+);
 
 app.use(express.json());
-app.use(cookieParser())
+app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.send("Welcome to car doctor server");
@@ -33,6 +35,30 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+// custom middlewares
+const middly = async (req, res, next) => {
+  console.log("we are middlemen in ", req.hostname, req.originalUrl);
+  next();
+};
+
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) {
+    res.status(401).send({ message: "unauthorized access" });
+    return;
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      console.log(err);
+      res.status(401).send({ message: "unauthorized access" });
+      return;
+    }
+    req.user = decoded;
+    next();
+  });
+};
 
 async function run() {
   try {
@@ -75,12 +101,17 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/bookings/:uid", async (req, res) => {
+    app.get("/bookings/:uid", verifyToken, async (req, res) => {
       const userId = req.params.uid;
+
+      if (userId !== req?.user?.uid) {
+        res.status(403).send({ message: "forbidden access" });
+        return;
+      }
+
       const query = { userId: userId };
       const cursor = bookingsCollection.find(query);
       const result = await cursor.toArray();
-      console.log("token",req.cookies.token)
       res.send(result);
     });
 
