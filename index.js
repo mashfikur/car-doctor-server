@@ -115,6 +115,10 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/remove-token", async (req, res) => {
+      res.clearCookie("token").send({ message: "cookie cleared" });
+    });
+
     app.post("/bookings", async (req, res) => {
       const bookingInfo = req.body;
       const result = await bookingsCollection.insertOne(bookingInfo);
